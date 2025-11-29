@@ -1,0 +1,504 @@
+// ===========================
+// Audio Visualizer Class
+// ===========================
+class AudioVisualizer {
+    constructor(canvasId, sectionId, titleId, artistId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.section = document.getElementById(sectionId);
+        this.titleElement = document.getElementById(titleId);
+        this.artistElement = document.getElementById(artistId);
+
+        this.audioContext = null;
+        this.analyser = null;
+        this.dataArray = null;
+        this.bufferLength = 0;
+        this.animationId = null;
+        this.hue = 0;
+    }
+
+    setup(audioElement) {
+        console.log('🎨 Configurando visualizador...');
+
+        if (!this.audioContext) {
+            try {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                const source = this.audioContext.createMediaElementSource(audioElement);
+
+                source.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+
+                this.analyser.fftSize = 256;
+                this.bufferLength = this.analyser.frequencyBinCount;
+                this.dataArray = new Uint8Array(this.bufferLength);
+
+                console.log('✅ Audio context creado');
+            } catch (error) {
+                console.error('❌ Error creando audio context:', error);
+            }
+        }
+
+        // Configurar canvas
+        setTimeout(() => {
+            const rect = this.canvas.getBoundingClientRect();
+            this.canvas.width = rect.width * window.devicePixelRatio;
+            this.canvas.height = rect.height * window.devicePixelRatio;
+            this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            console.log('✅ Canvas configurado:', {
+                width: this.canvas.width,
+                height: this.canvas.height
+            });
+        }, 100);
+    }
+
+    start() {
+        if (!this.animationId) {
+            console.log('🎬 Iniciando animación del visualizador');
+            this.animate();
+        }
+    }
+
+    stop() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.clear();
+    }
+
+    clear() {
+        const width = this.canvas.width / window.devicePixelRatio;
+        const height = this.canvas.height / window.devicePixelRatio;
+        this.ctx.clearRect(0, 0, width, height);
+    }
+
+    animate() {
+        this.animationId = requestAnimationFrame(() => this.animate());
+
+        if (!this.analyser) return;
+
+        this.analyser.getByteFrequencyData(this.dataArray);
+
+        const width = this.canvas.width / window.devicePixelRatio;
+        const height = this.canvas.height / window.devicePixelRatio;
+
+        this.ctx.clearRect(0, 0, width, height);
+
+        const barCount = 64;
+        const barWidth = width / barCount;
+
+        this.hue = (this.hue + 0.5) % 360;
+
+        for (let i = 0; i < barCount; i++) {
+            const dataIndex = Math.floor(i * this.bufferLength / barCount);
+            const barHeight = (this.dataArray[dataIndex] / 255) * height * 0.9;
+
+            const x = i * barWidth;
+            const y = height - barHeight;
+
+            const barHue = (this.hue + (i * 360 / barCount)) % 360;
+            const saturation = 70 + (this.dataArray[dataIndex] / 255) * 30;
+            const lightness = 50 + (this.dataArray[dataIndex] / 255) * 20;
+
+            const gradient = this.ctx.createLinearGradient(x, height, x, y);
+            gradient.addColorStop(0, `hsla(${barHue}, ${saturation}%, ${lightness}%, 0.8)`);
+            gradient.addColorStop(0.5, `hsla(${(barHue + 20) % 360}, ${saturation}%, ${lightness + 10}%, 0.9)`);
+            gradient.addColorStop(1, `hsla(${(barHue + 40) % 360}, ${saturation}%, ${lightness + 20}%, 1)`);
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(x, y, barWidth - 2, barHeight);
+
+            const reflectionGradient = this.ctx.createLinearGradient(x, height, x, height - barHeight * 0.3);
+            reflectionGradient.addColorStop(0, `hsla(${barHue}, ${saturation}%, ${lightness}%, 0.1)`);
+            reflectionGradient.addColorStop(1, `hsla(${barHue}, ${saturation}%, ${lightness}%, 0)`);
+
+            this.ctx.fillStyle = reflectionGradient;
+            this.ctx.fillRect(x, height, barWidth - 2, -barHeight * 0.3);
+        }
+    }
+
+    show() {
+        this.section.style.display = 'block';
+    }
+
+    hide() {
+        this.section.style.display = 'none';
+    }
+
+    updateInfo(title, artist) {
+        this.titleElement.textContent = title;
+        this.artistElement.textContent = artist;
+    }
+}
+
+// ===========================
+// Audio Player Class
+// ===========================
+class AudioPlayer {
+    constructor(audioElement, playerElement) {
+        this.audio = audioElement;
+        this.player = playerElement;
+
+        // UI Elements
+        this.titleElement = document.getElementById('player-title');
+        this.artistElement = document.getElementById('player-artist');
+        this.imageElement = document.getElementById('player-image');
+        this.playPauseBtn = document.getElementById('btn-play-pause');
+        this.playIcon = document.getElementById('play-icon');
+        this.pauseIcon = document.getElementById('pause-icon');
+        this.prevBtn = document.getElementById('btn-prev');
+        this.nextBtn = document.getElementById('btn-next');
+        this.progressBar = document.getElementById('progress-bar');
+        this.currentTimeEl = document.getElementById('current-time');
+        this.totalTimeEl = document.getElementById('total-time');
+        this.volumeBar = document.getElementById('volume-bar');
+        this.muteBtn = document.getElementById('btn-mute');
+        this.volumeIcon = document.getElementById('volume-icon');
+        this.muteIcon = document.getElementById('mute-icon');
+
+        this.visualizer = null;
+        this.setupEventListeners();
+        this.audio.volume = 0.7;
+    }
+
+    setVisualizer(visualizer) {
+        this.visualizer = visualizer;
+    }
+
+    setupEventListeners() {
+        // Play/Pause
+        this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+
+        // Previous/Next
+        this.prevBtn.addEventListener('click', () => this.onPrevious && this.onPrevious());
+        this.nextBtn.addEventListener('click', () => this.onNext && this.onNext());
+
+        // Progress bar
+        this.audio.addEventListener('timeupdate', () => this.updateProgress());
+        this.audio.addEventListener('loadedmetadata', () => this.updateDuration());
+        this.progressBar.addEventListener('input', (e) => this.seek(e.target.value));
+
+        // Volume
+        this.volumeBar.addEventListener('input', (e) => this.setVolume(e.target.value / 100));
+        this.muteBtn.addEventListener('click', () => this.toggleMute());
+
+        // Auto next
+        this.audio.addEventListener('ended', () => this.onEnded && this.onEnded());
+    }
+
+    play(song) {
+        this.audio.src = song.audio_file;
+
+        this.audio.play().then(() => {
+            this.updateUI(song);
+            this.show();
+            this.updatePlayPauseIcon(true);
+
+            if (this.visualizer) {
+                this.visualizer.start();
+            }
+        }).catch(error => {
+            console.log('Error al reproducir:', error);
+        });
+
+        this.extractAlbumArt(song);
+    }
+
+    togglePlayPause() {
+        if (this.audio.paused) {
+            this.audio.play();
+            this.updatePlayPauseIcon(true);
+            if (this.visualizer) this.visualizer.start();
+        } else {
+            this.audio.pause();
+            this.updatePlayPauseIcon(false);
+            if (this.visualizer) this.visualizer.stop();
+        }
+    }
+
+    updateUI(song) {
+        this.titleElement.textContent = song.title;
+        this.artistElement.textContent = song.artist;
+        this.imageElement.src = song.image_url || '/images/placeholder-1.svg';
+
+        if (this.visualizer) {
+            this.visualizer.updateInfo(song.title, song.artist);
+            this.visualizer.show();
+        }
+    }
+
+    updatePlayPauseIcon(isPlaying) {
+        if (isPlaying) {
+            this.playIcon.style.display = 'none';
+            this.pauseIcon.style.display = 'block';
+        } else {
+            this.playIcon.style.display = 'block';
+            this.pauseIcon.style.display = 'none';
+        }
+    }
+
+    updateProgress() {
+        if (this.audio.duration) {
+            const progress = (this.audio.currentTime / this.audio.duration) * 100;
+            this.progressBar.value = progress;
+            this.currentTimeEl.textContent = this.formatTime(this.audio.currentTime);
+        }
+    }
+
+    updateDuration() {
+        this.totalTimeEl.textContent = this.formatTime(this.audio.duration);
+    }
+
+    seek(value) {
+        const time = (value / 100) * this.audio.duration;
+        this.audio.currentTime = time;
+    }
+
+    setVolume(volume) {
+        this.audio.volume = volume;
+        this.updateVolumeIcon();
+    }
+
+    toggleMute() {
+        this.audio.muted = !this.audio.muted;
+        this.updateVolumeIcon();
+    }
+
+    updateVolumeIcon() {
+        if (this.audio.muted || this.audio.volume === 0) {
+            this.volumeIcon.style.display = 'none';
+            this.muteIcon.style.display = 'block';
+        } else {
+            this.volumeIcon.style.display = 'block';
+            this.muteIcon.style.display = 'none';
+        }
+    }
+
+    show() {
+        this.player.style.display = 'block';
+    }
+
+    hide() {
+        this.player.style.display = 'none';
+    }
+
+    formatTime(seconds) {
+        if (isNaN(seconds)) return '0:00';
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    extractAlbumArt(song) {
+        if (window.jsmediatags) {
+            fetch(song.audio_file)
+                .then(response => response.blob())
+                .then(blob => {
+                    jsmediatags.read(blob, {
+                        onSuccess: (tag) => {
+                            if (tag.tags.picture) {
+                                const picture = tag.tags.picture;
+                                let base64String = '';
+
+                                for (let i = 0; i < picture.data.length; i++) {
+                                    base64String += String.fromCharCode(picture.data[i]);
+                                }
+
+                                const imageUrl = `data:${picture.format};base64,${window.btoa(base64String)}`;
+                                this.imageElement.src = imageUrl;
+
+                                console.log('✅ Portada extraída del MP3:', song.title);
+                            }
+                        },
+                        onError: () => {
+                            console.log('ℹ️ No se pudieron leer metadatos del MP3');
+                        }
+                    });
+                })
+                .catch(() => {
+                    console.log('ℹ️ No se pudo cargar el MP3 para extraer metadatos');
+                });
+        }
+    }
+}
+
+// ===========================
+// Song Manager Class
+// ===========================
+class SongManager {
+    constructor() {
+        this.songs = [];
+        this.currentIndex = 0;
+        this.loadingEl = document.getElementById('loading');
+        this.errorEl = document.getElementById('error');
+        this.containerEl = document.getElementById('songs-container');
+    }
+
+    async load() {
+        try {
+            const response = await fetch('/api/songs');
+            const result = await response.json();
+
+            this.loadingEl.style.display = 'none';
+
+            if (!result.success) {
+                throw new Error(result.message);
+            }
+
+            if (result.data.length === 0) {
+                this.containerEl.innerHTML = '<p style="text-align: center; color: #666;">No hay canciones disponibles</p>';
+                return [];
+            }
+
+            this.songs = result.data;
+            return this.songs;
+        } catch (error) {
+            console.error('Error al cargar canciones:', error);
+            this.loadingEl.style.display = 'none';
+            this.errorEl.style.display = 'block';
+            this.errorEl.innerHTML = `
+                <p style="text-align: center; color: #d32f2f; padding: 2rem;">
+                    Error al cargar las canciones: ${error.message}
+                </p>
+            `;
+            return [];
+        }
+    }
+
+    render(onPlayCallback) {
+        this.containerEl.innerHTML = this.songs.map((song, index) => `
+            <article class="song-card">
+                <div class="song-image">
+                    <img src="${song.image_url || '/images/placeholder-1.svg'}"
+                         alt="Portada de ${this.escapeHtml(song.title)}">
+                </div>
+                <div class="song-info">
+                    <h3 class="song-title">${this.escapeHtml(song.title)}</h3>
+                    <p class="song-artist">${this.escapeHtml(song.artist)}</p>
+                    <p class="song-description">
+                        ${this.escapeHtml(song.description || 'Sin descripción disponible')}
+                    </p>
+                    <div class="song-meta">
+                        ${song.genre ? `<span class="song-genre">${this.escapeHtml(song.genre)}</span>` : ''}
+                        ${song.duration ? `<span class="song-duration">${this.escapeHtml(song.duration)}</span>` : ''}
+                    </div>
+                    <div class="song-links">
+                        ${song.audio_file ? `
+                            <a href="#" class="btn btn-play" data-index="${index}">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                Reproducir
+                            </a>
+                        ` : ''}
+                        ${song.spotify_url ? `
+                            <a href="${song.spotify_url}" target="_blank" class="btn btn-secondary">
+                                Spotify
+                            </a>
+                        ` : ''}
+                        ${song.youtube_url ? `
+                            <a href="${song.youtube_url}" target="_blank" class="btn btn-secondary">
+                                YouTube Music
+                            </a>
+                        ` : ''}
+                    </div>
+                </div>
+            </article>
+        `).join('');
+
+        // Add event listeners to play buttons
+        document.querySelectorAll('.btn-play').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const index = parseInt(btn.dataset.index);
+                this.currentIndex = index;
+                if (onPlayCallback) {
+                    onPlayCallback(this.songs[index], index);
+                }
+            });
+        });
+    }
+
+    getCurrent() {
+        return this.songs[this.currentIndex];
+    }
+
+    getNext() {
+        this.currentIndex = (this.currentIndex + 1) % this.songs.length;
+        return this.songs[this.currentIndex];
+    }
+
+    getPrevious() {
+        this.currentIndex = (this.currentIndex - 1 + this.songs.length) % this.songs.length;
+        return this.songs[this.currentIndex];
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+}
+
+// ===========================
+// Main Application
+// ===========================
+class RadioCalicoApp {
+    constructor() {
+        this.visualizer = new AudioVisualizer(
+            'main-visualizer',
+            'visualizer-section',
+            'vis-title',
+            'vis-artist'
+        );
+
+        this.player = new AudioPlayer(
+            document.getElementById('audio-element'),
+            document.getElementById('audio-player')
+        );
+
+        this.songManager = new SongManager();
+
+        this.player.setVisualizer(this.visualizer);
+
+        // Setup player callbacks
+        this.player.onPrevious = () => this.playPrevious();
+        this.player.onNext = () => this.playNext();
+        this.player.onEnded = () => this.playNext();
+
+        this.init();
+    }
+
+    async init() {
+        const songs = await this.songManager.load();
+
+        if (songs.length > 0) {
+            this.songManager.render((song, index) => this.playSong(song, index));
+        }
+    }
+
+    playSong(song, index) {
+        this.songManager.currentIndex = index;
+        this.visualizer.setup(this.player.audio);
+        this.player.play(song);
+    }
+
+    playNext() {
+        const song = this.songManager.getNext();
+        this.player.play(song);
+    }
+
+    playPrevious() {
+        const song = this.songManager.getPrevious();
+        this.player.play(song);
+    }
+}
+
+// ===========================
+// Initialize App
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new RadioCalicoApp();
+});
