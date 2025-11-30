@@ -116,11 +116,18 @@ npm run dev
 
 ```
 radiocalico/
+├── src/                    # Código del backend
+│   ├── config/
+│   │   └── database.js     # Configuración de PostgreSQL
+│   ├── controllers/
+│   │   └── songsController.js  # Controladores de canciones
+│   ├── routes/
+│   │   └── songs.js        # Definición de rutas API
+│   └── services/
+│       └── coverArtService.js  # Servicio de búsqueda de carátulas
 ├── database/
-│   └── migrations/          # Migraciones SQL
-├── info/
-│   └── canciones.md        # Lista de canciones
-├── public/
+│   └── migrations/         # Migraciones SQL
+├── public/                 # Frontend estático
 │   ├── audio/              # Archivos MP3
 │   ├── css/
 │   │   └── styles.css      # Estilos globales
@@ -129,44 +136,80 @@ radiocalico/
 │   │   └── app.js          # Código JavaScript modular
 │   └── index.html          # Página principal
 ├── docker-compose.yml      # Configuración Docker Compose
-├── Dockerfile             # Imagen de la aplicación
-├── server.js              # Servidor Express
-├── package.json           # Dependencias
-└── README.md             # Este archivo
+├── Dockerfile              # Imagen de la aplicación
+├── server.js               # Punto de entrada del servidor
+├── package.json            # Dependencias
+└── README.md               # Este archivo
 ```
 
 ## Arquitectura del Código
 
-El código JavaScript está organizado en clases:
+### Backend (Node.js/Express)
 
-### `AudioVisualizer`
-Maneja el visualizador de audio con Web Audio API y Canvas.
+La arquitectura del backend sigue el patrón **MVC (Model-View-Controller)** con separación de responsabilidades:
+
+#### **Config (`src/config/`)**
+- `database.js` - Pool de conexiones a PostgreSQL con event listeners
+
+#### **Controllers (`src/controllers/`)**
+- `songsController.js` - Lógica de negocio para canciones
+  - `getAllSongs()` - Obtiene todas las canciones
+  - `getSongById()` - Obtiene una canción por ID
+  - `voteSong()` - Registra un voto
+  - `registerPlay()` - Incrementa contador de reproducciones
+  - `getCover()` - Busca carátula de álbum
+
+#### **Routes (`src/routes/`)**
+- `songs.js` - Define endpoints `/api/songs/*` y los conecta con controladores
+
+#### **Services (`src/services/`)**
+- `coverArtService.js` - Servicio desacoplado para búsqueda de carátulas
+  - Integración con MusicBrainz + Cover Art Archive
+  - Arquitectura extensible para agregar más proveedores (Spotify, Last.fm, etc.)
+
+### Frontend (JavaScript OOP)
+
+El código JavaScript del cliente está organizado en clases:
+
+#### **`AudioVisualizer`**
+Visualizador de audio en tiempo real con Web Audio API y Canvas.
 - `setup()` - Configura el contexto de audio y analizador
-- `animate()` - Dibuja las barras de frecuencia
+- `animate()` - Dibuja 64 barras de frecuencia con gradientes
 - `start()` / `stop()` - Controla la animación
 
-### `AudioPlayer`
-Controla la reproducción de audio y la interfaz del reproductor.
+#### **`AudioPlayer`**
+Controla la reproducción y la interfaz del reproductor.
 - `play()` - Reproduce una canción
 - `togglePlayPause()` - Alterna entre play y pausa
-- `extractAlbumArt()` - Extrae portadas de archivos MP3
+- `extractAlbumArt()` - Extrae portadas de archivos MP3 con jsmediatags
 
-### `SongManager`
-Gestiona la carga y renderizado de canciones.
+#### **`SongManager`**
+Gestiona canciones, votos y reproducciones.
 - `load()` - Carga canciones desde la API
-- `render()` - Renderiza las tarjetas de canciones
-- `getNext()` / `getPrevious()` - Navegación
+- `render()` - Renderiza tarjetas con descripción expandible
+- `voteSong()` - Registra voto con animación
+- `registerPlay()` - Incrementa contador de reproducciones
 
-### `RadioCalicoApp`
-Clase principal que orquesta la aplicación.
+#### **`RadioCalicoApp`**
+Clase principal que orquesta toda la aplicación.
 
 ## API Endpoints
 
-### `GET /`
+### Páginas
+
+#### `GET /`
 Página principal de la aplicación.
 
-### `GET /api/songs`
-Obtiene todas las canciones.
+#### `GET /db-test`
+Prueba de conexión a la base de datos.
+
+### API REST
+
+#### `GET /api/status`
+Estado del servidor.
+
+#### `GET /api/songs`
+Obtiene todas las canciones con votos y reproducciones.
 
 **Respuesta:**
 ```json
@@ -184,20 +227,68 @@ Obtiene todas las canciones.
       "image_url": "/images/placeholder-1.svg",
       "audio_file": "/audio/golden.mp3",
       "spotify_url": "https://open.spotify.com/...",
-      "youtube_url": "https://www.youtube.com/..."
+      "youtube_url": "https://www.youtube.com/...",
+      "votes": 42,
+      "play_count": 156
     }
   ]
 }
 ```
 
-### `GET /api/songs/:id`
+#### `GET /api/songs/:id`
 Obtiene una canción específica por ID.
 
-### `GET /api/status`
-Estado del servidor.
+#### `POST /api/songs/:id/vote`
+Registra un voto para una canción.
 
-### `GET /db-test`
-Prueba de conexión a la base de datos.
+**Respuesta:**
+```json
+{
+  "success": true,
+  "message": "Voto registrado exitosamente",
+  "data": {
+    "id": 1,
+    "votes": 43
+  }
+}
+```
+
+#### `POST /api/songs/:id/play`
+Incrementa el contador de reproducciones de una canción.
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "message": "Reproducción registrada exitosamente",
+  "data": {
+    "id": 1,
+    "play_count": 157
+  }
+}
+```
+
+#### `GET /api/songs/:id/cover`
+Busca la carátula del álbum usando MusicBrainz + Cover Art Archive.
+
+**Respuesta (encontrada):**
+```json
+{
+  "success": true,
+  "coverUrl": "https://coverartarchive.org/release/.../front-500",
+  "source": "coverartarchive",
+  "release": "Album Name"
+}
+```
+
+**Respuesta (no encontrada):**
+```json
+{
+  "success": true,
+  "coverUrl": null,
+  "source": "none"
+}
+```
 
 ## Comandos Útiles
 
@@ -237,6 +328,8 @@ docker-compose ps
 | audio_file | VARCHAR(500) | Ruta al archivo MP3 |
 | spotify_url | VARCHAR(500) | Enlace a Spotify |
 | youtube_url | VARCHAR(500) | Enlace a YouTube |
+| votes | INTEGER | Número de votos (me gusta) |
+| play_count | INTEGER | Contador de reproducciones |
 | created_at | TIMESTAMP | Fecha de creación |
 | updated_at | TIMESTAMP | Fecha de actualización |
 
