@@ -32,6 +32,9 @@ Thumbs.db
 *.sublime-project
 *.sublime-workspace
 
+# Claude Code
+.claude/
+
 # Build
 dist/
 build/
@@ -49,3 +52,4 @@ public/audio/*.ogg
 *.tmp
 *.temp
 .cache/
+nul
