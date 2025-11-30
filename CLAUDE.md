@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Radio Calico is a Node.js web application with PostgreSQL database, designed to run in Docker containers. The application uses Express.js for the web server and pg for PostgreSQL database connections.
+Radio Calico is a Node.js web application with PostgreSQL database, designed to run in Docker containers. The application uses TypeScript, Express.js for the web server and pg for PostgreSQL database connections.
 
 ## Development Commands
 
@@ -19,8 +19,10 @@ docker-compose restart app    # Restart the application container
 ### Local Development (without Docker)
 ```bash
 npm install                   # Install dependencies
-npm run dev                   # Start development server with nodemon (hot reload)
-npm start                     # Start production server
+npm run build                 # Compile TypeScript to JavaScript (output to dist/)
+npm run dev                   # Start development server with ts-node (hot reload)
+npm run start:ts              # Start server with ts-node (no build needed)
+npm start                     # Start production server (requires build first)
 ```
 
 ### Database Management
@@ -32,11 +34,16 @@ npm start                     # Start production server
 ## Architecture
 
 ### Application Structure
-- **server.js**: Main application entry point
+- **server.ts**: Main application entry point (TypeScript)
   - Configures Express server with JSON and URL-encoded body parsing
   - Establishes PostgreSQL connection pool using environment variables
   - Binds to 0.0.0.0 to accept connections from Docker network
   - Includes global error handlers for uncaught exceptions and unhandled promise rejections
+- **src/types/index.ts**: TypeScript type definitions for the application
+  - Song: Database model for songs
+  - APIResponse: Standardized API response format
+  - CoverSearchResult: Cover art search results
+  - MusicBrainz types: External API response types
 
 ### Docker Setup
 The application uses a 3-container architecture:
@@ -68,6 +75,26 @@ All configuration is managed through `.env` file:
 - POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB: Database credentials
 - POSTGRES_PORT: Database port
 - ADMINER_PORT: Adminer web interface port
+
+## TypeScript Configuration
+
+### Build Process
+- TypeScript source files (`.ts`) are in the root and `src/` directory
+- Compiled JavaScript output goes to `dist/` directory
+- Source maps and type declarations are generated for debugging
+
+### Type Safety
+- All new code must be written in TypeScript
+- Use interfaces from `src/types/index.ts` for data models
+- Avoid using `any` type - use proper type definitions
+- Request/Response handlers must have proper Express types (Request, Response)
+
+### Adding New Features
+When adding new features:
+1. Define types/interfaces in `src/types/index.ts` first
+2. Use those types throughout controllers, services, and routes
+3. Run `npm run build` to verify TypeScript compilation
+4. Ensure no type errors before committing
 
 ## API Endpoints
 

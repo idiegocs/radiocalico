@@ -160,7 +160,8 @@ class AudioPlayer {
 
         this.visualizer = null;
         this.setupEventListeners();
-        this.audio.volume = 0.7;
+        this.audio.volume = 0.35;
+        this.volumeBar.value = 35;
     }
 
     setVisualizer(visualizer) {
