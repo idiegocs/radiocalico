@@ -199,6 +199,11 @@ class AudioPlayer {
             if (this.visualizer) {
                 this.visualizer.start();
             }
+
+            // Registrar reproducción
+            if (this.onPlay && song.id) {
+                this.onPlay(song.id);
+            }
         }).catch(error => {
             console.log('Error al reproducir:', error);
         });
@@ -353,6 +358,14 @@ class SongManager {
             }
 
             this.songs = result.data;
+
+            // Buscar carátulas para canciones que usan placeholder
+            this.songs.forEach(async (song) => {
+                if (!song.image_url || song.image_url.includes('placeholder')) {
+                    await this.fetchCoverArt(song.id);
+                }
+            });
+
             return this.songs;
         } catch (error) {
             console.error('Error al cargar canciones:', error);
@@ -367,26 +380,71 @@ class SongManager {
         }
     }
 
+    async fetchCoverArt(songId) {
+        try {
+            const response = await fetch(`/api/songs/${songId}/cover`);
+            const result = await response.json();
+
+            if (result.success && result.coverUrl) {
+                // Actualizar la imagen en el array de canciones
+                const songIndex = this.songs.findIndex(s => s.id == songId);
+                if (songIndex !== -1) {
+                    this.songs[songIndex].image_url = result.coverUrl;
+
+                    // Actualizar la imagen en la UI
+                    const imgElement = document.querySelector(`.song-card[data-song-id="${songId}"] img`);
+                    if (imgElement) {
+                        imgElement.src = result.coverUrl;
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error al obtener carátula:', error);
+        }
+    }
+
     render(onPlayCallback) {
         this.containerEl.innerHTML = this.songs.map((song, index) => `
-            <article class="song-card">
+            <article class="song-card" data-song-id="${song.id}">
                 <div class="song-image">
                     <img src="${song.image_url || '/images/placeholder-1.svg'}"
-                         alt="Portada de ${this.escapeHtml(song.title)}">
+                         alt="Portada de ${this.escapeHtml(song.title)}"
+                         loading="lazy">
                 </div>
                 <div class="song-info">
                     <h3 class="song-title">${this.escapeHtml(song.title)}</h3>
                     <p class="song-artist">${this.escapeHtml(song.artist)}</p>
-                    <p class="song-description">
+                    <p class="song-description" data-song-id="${song.id}">
                         ${this.escapeHtml(song.description || 'Sin descripción disponible')}
                     </p>
+                    <span class="song-description-toggle" data-song-id="${song.id}" style="display: none;" title="Leer más">
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                        <span class="dot"></span>
+                    </span>
                     <div class="song-meta">
                         ${song.genre ? `<span class="song-genre">${this.escapeHtml(song.genre)}</span>` : ''}
                         ${song.duration ? `<span class="song-duration">${this.escapeHtml(song.duration)}</span>` : ''}
                     </div>
+                    <div class="song-stats">
+                        <div class="song-votes">
+                            <button class="btn-vote" data-song-id="${song.id}" title="Me gusta esta canción">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span class="vote-count" data-song-id="${song.id}">${song.votes || 0}</span>
+                            </button>
+                        </div>
+                        <div class="song-plays">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <span class="play-count" data-song-id="${song.id}">${song.play_count || 0} reproducciones</span>
+                        </div>
+                    </div>
                     <div class="song-links">
                         ${song.audio_file ? `
-                            <a href="#" class="btn btn-play" data-index="${index}">
+                            <a href="#" class="btn btn-play" data-index="${index}" data-song-id="${song.id}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M8 5v14l11-7z"/>
                                 </svg>
@@ -419,6 +477,120 @@ class SongManager {
                 }
             });
         });
+
+        // Add event listeners to vote buttons
+        document.querySelectorAll('.btn-vote').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const songId = btn.dataset.songId;
+                this.voteSong(songId);
+            });
+        });
+
+        // Add event listeners to descriptions for expand/collapse
+        document.querySelectorAll('.song-description').forEach(desc => {
+            const songId = desc.dataset.songId;
+            const toggle = document.querySelector(`.song-description-toggle[data-song-id="${songId}"]`);
+
+            // Check if description is truncated
+            if (desc.scrollHeight > desc.clientHeight) {
+                if (toggle) toggle.style.display = 'inline-block';
+            }
+
+            // Toggle expansion on description click
+            desc.addEventListener('click', () => {
+                this.toggleDescription(songId);
+            });
+
+            // Toggle expansion on "Ver más/menos" click
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    this.toggleDescription(songId);
+                });
+            }
+        });
+    }
+
+    toggleDescription(songId) {
+        const desc = document.querySelector(`.song-description[data-song-id="${songId}"]`);
+        const toggle = document.querySelector(`.song-description-toggle[data-song-id="${songId}"]`);
+
+        if (desc && toggle) {
+            desc.classList.toggle('expanded');
+            toggle.classList.toggle('expanded');
+
+            if (desc.classList.contains('expanded')) {
+                toggle.setAttribute('title', 'Leer menos');
+            } else {
+                toggle.setAttribute('title', 'Leer más');
+            }
+        }
+    }
+
+    async voteSong(songId) {
+        try {
+            const response = await fetch(`/api/songs/${songId}/vote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Actualizar el contador en la UI
+                const voteCountEl = document.querySelector(`.vote-count[data-song-id="${songId}"]`);
+                if (voteCountEl) {
+                    voteCountEl.textContent = result.data.votes;
+
+                    // Añadir animación de feedback
+                    const btnVote = voteCountEl.closest('.btn-vote');
+                    btnVote.classList.add('voted');
+                    setTimeout(() => {
+                        btnVote.classList.remove('voted');
+                    }, 300);
+                }
+
+                // Actualizar el array de canciones
+                const songIndex = this.songs.findIndex(s => s.id == songId);
+                if (songIndex !== -1) {
+                    this.songs[songIndex].votes = result.data.votes;
+                }
+            }
+        } catch (error) {
+            console.error('Error al votar:', error);
+        }
+    }
+
+    async registerPlay(songId) {
+        try {
+            const response = await fetch(`/api/songs/${songId}/play`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Actualizar el contador en la UI
+                const playCountEl = document.querySelector(`.play-count[data-song-id="${songId}"]`);
+                if (playCountEl) {
+                    const count = result.data.play_count;
+                    playCountEl.textContent = `${count} ${count === 1 ? 'reproducción' : 'reproducciones'}`;
+                }
+
+                // Actualizar el array de canciones
+                const songIndex = this.songs.findIndex(s => s.id == songId);
+                if (songIndex !== -1) {
+                    this.songs[songIndex].play_count = result.data.play_count;
+                }
+            }
+        } catch (error) {
+            console.error('Error al registrar reproducción:', error);
+        }
     }
 
     getCurrent() {
@@ -467,6 +639,7 @@ class RadioCalicoApp {
         this.player.onPrevious = () => this.playPrevious();
         this.player.onNext = () => this.playNext();
         this.player.onEnded = () => this.playNext();
+        this.player.onPlay = (songId) => this.songManager.registerPlay(songId);
 
         this.init();
     }
@@ -483,16 +656,53 @@ class RadioCalicoApp {
         this.songManager.currentIndex = index;
         this.visualizer.setup(this.player.audio);
         this.player.play(song);
+        this.highlightNowPlaying(song.id);
+    }
+
+    highlightNowPlaying(songId) {
+        // Quitar la clase now-playing y el indicador de todas las canciones
+        document.querySelectorAll('.song-card.now-playing').forEach(card => {
+            card.classList.remove('now-playing');
+            const indicator = card.querySelector('.now-playing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        });
+
+        // Agregar la clase now-playing a la canción actual
+        const currentCard = document.querySelector(`.song-card[data-song-id="${songId}"]`);
+        if (currentCard) {
+            currentCard.classList.add('now-playing');
+
+            // Crear y agregar el indicador animado
+            const indicator = document.createElement('div');
+            indicator.className = 'now-playing-indicator';
+            indicator.innerHTML = `
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+            `;
+
+            // Agregar el indicador a la imagen de la canción
+            const songImage = currentCard.querySelector('.song-image');
+            if (songImage) {
+                songImage.style.position = 'relative';
+                songImage.appendChild(indicator);
+            }
+        }
     }
 
     playNext() {
         const song = this.songManager.getNext();
         this.player.play(song);
+        this.highlightNowPlaying(song.id);
     }
 
     playPrevious() {
         const song = this.songManager.getPrevious();
         this.player.play(song);
+        this.highlightNowPlaying(song.id);
     }
 }
 
