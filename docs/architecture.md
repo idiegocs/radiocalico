@@ -1,4 +1,4 @@
-# Arquitectura de Radio Calico
+# Arquitectura de Disc Radio
 
 ## Diagrama de Arquitectura General
 

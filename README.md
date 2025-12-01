@@ -1,4 +1,4 @@
-# Radio Calico 🎵
+# Disc Radio 🎵
 
 Aplicación web de radio con reproductor de audio, visualizador en tiempo real y gestión de canciones.
 
@@ -190,7 +190,7 @@ Gestiona canciones, votos y reproducciones.
 - `voteSong()` - Registra voto con animación
 - `registerPlay()` - Incrementa contador de reproducciones
 
-#### **`RadioCalicoApp`**
+#### **`DiscRadioApp`**
 Clase principal que orquesta toda la aplicación.
 
 ## API Endpoints

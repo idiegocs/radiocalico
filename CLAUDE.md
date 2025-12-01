@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Radio Calico is a Node.js web application with PostgreSQL database, designed to run in Docker containers. The application uses TypeScript, Express.js for the web server and pg for PostgreSQL database connections.
+Disc Radio is a Node.js web application with PostgreSQL database, designed to run in Docker containers. The application uses TypeScript, Express.js for the web server and pg for PostgreSQL database connections.
 
 ## Development Commands
 

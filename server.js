@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
 // Ruta API de estado
 app.get('/api/status', (req, res) => {
   res.json({
-    message: 'Bienvenido a Radio Calico',
+    message: 'Bienvenido a Disc Radio',
     status: 'Server funcionando correctamente'
   });
 });

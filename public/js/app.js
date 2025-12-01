@@ -618,7 +618,7 @@ class SongManager {
 // ===========================
 // Main Application
 // ===========================
-class RadioCalicoApp {
+class DiscRadioApp {
     constructor() {
         this.visualizer = new AudioVisualizer(
             'main-visualizer',
@@ -711,5 +711,5 @@ class RadioCalicoApp {
 // Initialize App
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new RadioCalicoApp();
+    window.app = new DiscRadioApp();
 });

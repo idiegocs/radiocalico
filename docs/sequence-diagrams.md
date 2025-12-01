@@ -1,4 +1,4 @@
-# Diagramas de Secuencia - Radio Calico
+# Diagramas de Secuencia - Disc Radio
 
 Este documento contiene los diagramas de secuencia que explican los principales flujos de la aplicación.
 
