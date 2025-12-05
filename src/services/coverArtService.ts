@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { CoverSearchResult, MusicBrainzSearchResponse, MusicBrainzRelease } from '../types';
+import { CoverSearchResult, MusicBrainzSearchResponse } from '../types';
 
 /**
  * Servicio para búsqueda de carátulas de álbumes
@@ -126,18 +126,18 @@ class CoverArtService {
       }
 
       return null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
 
   /**
    * Placeholder para futura integración con Spotify
-   * @param artist - Nombre del artista
-   * @param title - Título de la canción
+   * @param _artist - Nombre del artista
+   * @param _title - Título de la canción
    * @returns Resultado de búsqueda
    */
-  async searchSpotify(artist: string, title: string): Promise<CoverSearchResult> {
+  async searchSpotify(_artist: string, _title: string): Promise<CoverSearchResult> {
     // TODO: Implementar búsqueda en Spotify API
     // Requiere: spotify-web-api-node o similar
     throw new Error('Spotify integration not implemented yet');
@@ -145,11 +145,11 @@ class CoverArtService {
 
   /**
    * Placeholder para futura integración con Last.fm
-   * @param artist - Nombre del artista
-   * @param title - Título de la canción
+   * @param _artist - Nombre del artista
+   * @param _title - Título de la canción
    * @returns Resultado de búsqueda
    */
-  async searchLastFm(artist: string, title: string): Promise<CoverSearchResult> {
+  async searchLastFm(_artist: string, _title: string): Promise<CoverSearchResult> {
     // TODO: Implementar búsqueda en Last.fm API
     throw new Error('Last.fm integration not implemented yet');
   }
