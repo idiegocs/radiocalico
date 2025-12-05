@@ -38,6 +38,9 @@ Thumbs.db
 dist/
 build/
 
+# Test coverage
+coverage/
+
 # Docker
 .docker/
 

@@ -22,11 +22,12 @@
     "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["node"]
+    "types": ["node", "jest"]
   },
   "include": [
     "src/**/*",
-    "server.ts"
+    "server.ts",
+    "tests/**/*"
   ],
   "exclude": [
     "node_modules",
