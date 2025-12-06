@@ -25,7 +25,7 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
         play_count,
         created_at
       FROM songs
-      ORDER BY created_at DESC
+      ORDER BY play_count DESC NULLS LAST, created_at DESC
     `);
 
     const response: APIResponse<Song[]> = {
