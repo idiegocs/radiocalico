@@ -142,6 +142,20 @@ radiocalico/
 └── README.md               # Este archivo
 ```
 
+## 📚 Documentación
+
+### Diagramas
+
+Para una comprensión visual de la arquitectura y los flujos de la aplicación, consulta:
+
+- **[Diagrama de Arquitectura](docs/architecture.md)** - Vista general de la arquitectura del sistema, componentes y sus interacciones
+- **[Diagramas de Secuencia](docs/sequence-diagrams.md)** - Flujos detallados de:
+  - Carga inicial de la aplicación
+  - Reproducción de canciones
+  - Sistema de votación
+  - Búsqueda de carátulas
+  - Arquitectura backend
+
 ## Arquitectura del Código
 
 ### Backend (Node.js/Express)
