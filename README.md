@@ -144,11 +144,103 @@ radiocalico/
 
 ## 📚 Documentación
 
-### Diagramas
+### Diagramas de Arquitectura
 
-Para una comprensión visual de la arquitectura y los flujos de la aplicación, consulta:
+#### Arquitectura General del Sistema
 
-- **[Diagrama de Arquitectura](docs/architecture.md)** - Vista general de la arquitectura del sistema, componentes y sus interacciones
+```mermaid
+graph TB
+    subgraph "Cliente (Browser)"
+        UI[HTML/CSS/JS]
+        Classes[JavaScript Classes]
+        AudioAPI[Web Audio API]
+        Canvas[Canvas API]
+
+        UI --> Classes
+        Classes --> AudioAPI
+        Classes --> Canvas
+    end
+
+    subgraph "Servidor Node.js"
+        Server[server.js]
+        Middleware[Express Middleware]
+        Static[Archivos Estáticos]
+
+        Server --> Middleware
+        Server --> Static
+    end
+
+    subgraph "Backend API (src/)"
+        Routes[Routes]
+        Controllers[Controllers]
+        Services[Services]
+        Config[Config]
+
+        Routes --> Controllers
+        Controllers --> Services
+        Controllers --> Config
+    end
+
+    subgraph "Base de Datos"
+        PostgreSQL[(PostgreSQL)]
+    end
+
+    subgraph "APIs Externas"
+        MusicBrainz[MusicBrainz API]
+        CoverArt[Cover Art Archive]
+    end
+
+    UI -->|HTTP Requests| Server
+    Server -->|/api/songs/*| Routes
+    Config -->|Pool de Conexiones| PostgreSQL
+    Services -->|Búsqueda| MusicBrainz
+    Services -->|Carátulas| CoverArt
+
+    style Cliente fill:#e1f5ff
+    style Servidor fill:#fff4e1
+    style Backend fill:#e8f5e9
+    style Base de Datos fill:#f3e5f5
+    style APIs Externas fill:#ffe0e0
+```
+
+#### Flujo de Carga Inicial
+
+```mermaid
+sequenceDiagram
+    actor Usuario
+    participant Browser
+    participant Server
+    participant Routes
+    participant Controller
+    participant DB
+
+    Usuario->>Browser: Abre http://localhost:3000
+    Browser->>Server: GET /
+    Server->>Browser: index.html + CSS + JS
+
+    Browser->>Browser: DOMContentLoaded
+    Browser->>Browser: new DiscRadioApp()
+    Browser->>Browser: songManager.load()
+
+    Browser->>Server: GET /api/songs
+    Server->>Routes: /api/songs router
+    Routes->>Controller: getAllSongs()
+    Controller->>DB: SELECT * FROM songs ORDER BY play_count DESC
+    DB-->>Controller: Canciones ordenadas por reproducciones
+    Controller-->>Routes: JSON response
+    Routes-->>Server: Response
+    Server-->>Browser: {success: true, data: [...]}
+
+    Browser->>Browser: songManager.render()
+    Browser->>Browser: Renderiza tarjetas de canciones
+    Browser->>Usuario: Interfaz lista
+```
+
+### Documentación Completa
+
+Para más diagramas y flujos detallados:
+
+- **[Arquitectura Completa](docs/architecture.md)** - Todos los diagramas de arquitectura, capas, flujo de datos y patrones de diseño
 - **[Diagramas de Secuencia](docs/sequence-diagrams.md)** - Flujos detallados de:
   - Carga inicial de la aplicación
   - Reproducción de canciones
