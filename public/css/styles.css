@@ -655,6 +655,28 @@ body {
     font-size: 0.95rem;
 }
 
+.environment-info {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.environment-info .env-dev {
+    background-color: #4caf50;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.environment-info .env-prod {
+    background-color: #f44336;
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .logo {

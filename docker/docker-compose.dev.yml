@@ -1,0 +1,31 @@
+# Development Docker Compose Override
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  app:
+    container_name: radiocalico_app_dev
+    # Development: mount source code for hot reload
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    # Development command with nodemon
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  db:
+    container_name: radiocalico_db_dev
+
+  # Adminer is only included in development
+  adminer:
+    image: adminer:latest
+    container_name: radiocalico_adminer_dev
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    depends_on:
+      - db
+    networks:
+      - radiocalico_network

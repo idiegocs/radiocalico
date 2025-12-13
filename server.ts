@@ -6,18 +6,29 @@ import songsRoutes from './src/routes/songs';
 import { APIResponse } from './src/types';
 
 const app: Application = express();
-const PORT: number = parseInt(process.env.APP_PORT || '3000', 10);
+// Puerto interno en el que escucha el servidor (siempre 3000 en Docker)
+const PORT: number = 3000;
+// Puerto externo para mostrar al usuario (viene de APP_PORT en .env)
+const DISPLAY_PORT: number = parseInt(process.env.APP_PORT || '3000', 10);
+
+// Determinar la ruta base del proyecto
+// En desarrollo: __dirname es la raíz del proyecto
+// En producción: __dirname es dist/, necesitamos subir un nivel
+const isProduction = process.env.NODE_ENV === 'production';
+const publicPath = isProduction
+  ? path.join(__dirname, '..', 'public')
+  : path.join(__dirname, 'public');
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos desde la carpeta public
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(publicPath));
 
 // Ruta principal - sirve la página de inicio
 app.get('/', (req: Request, res: Response) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 // Ruta API de estado
@@ -26,7 +37,11 @@ app.get('/api/status', (req: Request, res: Response) => {
     message: 'Bienvenido a Disc Radio',
     success: true,
     data: {
-      status: 'Server funcionando correctamente'
+      status: 'Server funcionando correctamente',
+      environment: process.env.NODE_ENV || 'development',
+      port: DISPLAY_PORT,
+      database: process.env.POSTGRES_DB || 'unknown',
+      version: '1.0.0'
     }
   };
   res.json(response);

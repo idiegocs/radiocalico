@@ -2,9 +2,10 @@ import { Pool } from 'pg';
 import { DatabaseConfig } from '../types';
 
 // Configuración del pool de conexiones a PostgreSQL
+// SSL solo si se especifica explícitamente (para producción en cloud)
 const config: DatabaseConfig = {
   connectionString: process.env.DATABASE_URL!,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
 };
 
 const pool = new Pool(config);

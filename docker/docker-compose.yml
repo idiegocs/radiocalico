@@ -1,30 +1,31 @@
+# Base Docker Compose Configuration
+# Use with environment-specific overrides:
+#   Development: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
 version: '3.8'
 
 services:
   app:
     build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: radiocalico_app
+      context: ..
+      dockerfile: docker/Dockerfile
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"
     environment:
       - NODE_ENV=${NODE_ENV:-development}
+      - APP_PORT=${APP_PORT:-3000}
+      - POSTGRES_DB=${POSTGRES_DB}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
     networks:
       - radiocalico_network
-    command: npm run dev
 
   db:
     image: postgres:16-alpine
-    container_name: radiocalico_db
     restart: unless-stopped
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
@@ -39,17 +40,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - radiocalico_network
-
-  adminer:
-    image: adminer:latest
-    container_name: radiocalico_adminer
-    restart: unless-stopped
-    ports:
-      - "${ADMINER_PORT:-8080}:8080"
-    depends_on:
-      - db
     networks:
       - radiocalico_network
 

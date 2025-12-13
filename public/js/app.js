@@ -712,4 +712,25 @@ class DiscRadioApp {
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new DiscRadioApp();
+    loadEnvironmentInfo();
 });
+
+// Load and display environment information
+async function loadEnvironmentInfo() {
+    try {
+        const response = await fetch('/api/status');
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const envElement = document.getElementById('environment-info');
+            const env = result.data.environment;
+            const envLabel = env === 'production' ? 'PRODUCCIÓN' : 'DESARROLLO';
+            const envClass = env === 'production' ? 'env-prod' : 'env-dev';
+
+            envElement.innerHTML = `<span class="${envClass}">${envLabel}</span> • Puerto: ${result.data.port} • v${result.data.version}`;
+            envElement.className = `environment-info ${envClass}`;
+        }
+    } catch (error) {
+        console.log('No se pudo cargar información del ambiente');
+    }
+}

@@ -1,0 +1,38 @@
+# Production Docker Compose Override
+# Use with: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+version: '3.8'
+
+services:
+  app:
+    container_name: radiocalico_app_prod
+    # Production: use built image, no volume mounts
+    volumes: []
+    # Production command
+    command: npm start
+    environment:
+      - NODE_ENV=production
+    # Production restart policy
+    restart: always
+    # Build with production optimization
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+
+  db:
+    container_name: radiocalico_db_prod
+    # Production restart policy
+    restart: always
+    # Limit PostgreSQL resources in production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# Note: adminer service is not included in production

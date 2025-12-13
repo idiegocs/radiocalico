@@ -8,12 +8,27 @@ Disc Radio is a Node.js web application with PostgreSQL database, designed to ru
 
 ## Development Commands
 
-### Local Development (with Docker)
+### Docker Development (Recommended)
+
+The application supports separate development and production environments with dedicated configurations:
+
 ```bash
-docker-compose up -d          # Start all services (app, db, adminer)
-docker-compose down           # Stop all services
-docker-compose logs -f app    # View application logs
-docker-compose restart app    # Restart the application container
+# Development environment (with hot reload, adminer, debug tools)
+npm run docker:dev              # Start development environment
+npm run docker:dev:build        # Start development with rebuild
+
+# Production environment (optimized, no dev tools)
+npm run docker:prod             # Start production environment
+npm run docker:prod:build       # Start production with rebuild
+
+# General Docker commands
+npm run docker:down             # Stop all containers
+npm run docker:logs             # View application logs
+npm run docker:logs:db          # View database logs
+
+# Direct docker-compose commands (if needed)
+docker-compose --env-file .env.development -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker-compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### Local Development (without Docker)
@@ -26,10 +41,11 @@ npm start                     # Start production server (requires build first)
 ```
 
 ### Database Management
-- Adminer (web-based database manager) is accessible at http://localhost:8080
+- **Development**: Adminer (web-based database manager) is accessible at http://localhost:8080
+- **Production**: Adminer is not included for security reasons
 - System: PostgreSQL
 - Server: db (when using Docker) or localhost
-- Database credentials are in `.env` file
+- Database credentials are in environment files (`.env.development`, `.env.production`)
 
 ## Architecture
 
@@ -69,12 +85,61 @@ The application uses a 3-container architecture:
 - Connection pool is managed by pg library
 
 ### Environment Configuration
-All configuration is managed through `.env` file:
-- NODE_ENV: Application environment (development/production)
-- APP_PORT: Application server port
-- POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB: Database credentials
-- POSTGRES_PORT: Database port
-- ADMINER_PORT: Adminer web interface port
+
+The project uses environment-specific configuration files:
+
+#### Configuration Files Structure
+```
+.env.development          # Development config (tracked in git)
+.env.production          # Production config (tracked in git, update passwords!)
+.env                     # Local overrides (gitignored, not tracked)
+.env.development.local   # Local dev overrides (gitignored)
+.env.production.local    # Local prod overrides (gitignored)
+```
+
+#### Environment Variables
+- **NODE_ENV**: Application environment (development/production)
+- **APP_PORT**: Application server port (default: 3000)
+- **POSTGRES_USER**: Database username
+- **POSTGRES_PASSWORD**: Database password (CHANGE IN PRODUCTION!)
+- **POSTGRES_DB**: Database name
+- **POSTGRES_PORT**: Database port (default: 5432)
+- **ADMINER_PORT**: Adminer web interface port (development only, default: 8080)
+
+#### Docker Compose Files
+```
+docker-compose.yml           # Base configuration (shared)
+docker-compose.dev.yml      # Development overrides (volumes, adminer, hot reload)
+docker-compose.prod.yml     # Production overrides (optimized, no dev tools)
+```
+
+#### Key Differences Between Environments
+
+**Development:**
+- Application Port: **3000**
+- Database Port: **5432**
+- Adminer Port: **8080**
+- Database Name: `radiocalico_db_dev`
+- Container Names: `radiocalico_app_dev`, `radiocalico_db_dev`, `radiocalico_adminer_dev`
+- Hot reload enabled (source code mounted as volume)
+- Adminer database UI included
+- Development dependencies available
+- Verbose logging
+- Command: `npm run dev` (nodemon with ts-node)
+
+**Production:**
+- Application Port: **3001**
+- Database Port: **5433**
+- Database Name: `radiocalico_db_prod`
+- Container Names: `radiocalico_app_prod`, `radiocalico_db_prod`
+- No volume mounts (uses built image)
+- No Adminer (security)
+- Optimized build
+- Resource limits applied
+- Command: `npm start` (compiled JavaScript)
+- Always restart policy
+
+**Note:** Different ports allow running both environments simultaneously without conflicts.
 
 ## TypeScript Configuration
 
