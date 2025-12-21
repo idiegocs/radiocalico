@@ -50,7 +50,16 @@ module.exports = [
       'security/detect-pseudoRandomBytes': 'error',
     },
   },
+  // Configuración específica para archivos de test
   {
-    ignores: ['dist/', 'node_modules/', '*.js', '!eslint.config.js'],
+    files: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+  {
+    ignores: ['dist/', 'node_modules/', '*.js', '!eslint.config.js', 'coverage/'],
   },
 ];
