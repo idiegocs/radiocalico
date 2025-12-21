@@ -1,4 +1,5 @@
-import express, { Router } from 'express';
+import * as express from 'express';
+import { Router } from 'express';
 import * as songsController from '../controllers/songsController';
 
 // Mock the controller
