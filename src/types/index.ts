@@ -85,4 +85,9 @@ export interface CreateSongParams {
 export interface DatabaseConfig {
   connectionString: string;
   ssl?: boolean | { rejectUnauthorized: boolean };
+  max?: number;
+  min?: number;
+  idleTimeoutMillis?: number;
+  connectionTimeoutMillis?: number;
+  maxUses?: number;
 }

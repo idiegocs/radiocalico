@@ -2,10 +2,30 @@ import { Pool } from 'pg';
 import { DatabaseConfig } from '../types';
 
 // Configuración del pool de conexiones a PostgreSQL
-// SSL solo si se especifica explícitamente (para producción en cloud)
+// Valores optimizados para desarrollo y producción
 const config: DatabaseConfig = {
   connectionString: process.env.DATABASE_URL!,
-  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
+
+  // Número máximo de clientes en el pool (default: 10)
+  // Incrementado para manejar más peticiones concurrentes
+  max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+
+  // Número mínimo de clientes en el pool (default: 0)
+  // Mantiene conexiones listas para uso inmediato
+  min: parseInt(process.env.DB_POOL_MIN || '2', 10),
+
+  // Tiempo en ms que un cliente puede estar inactivo antes de cerrarse (default: 10000)
+  // 30 segundos permite reutilización pero libera recursos inactivos
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+
+  // Tiempo en ms para esperar al intentar conectar (default: 0 = sin timeout)
+  // 2 segundos permite fallar rápido si hay problemas de conexión
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '2000', 10),
+
+  // Número máximo de usos de un cliente antes de retirarlo (default: Infinity)
+  // Previene memory leaks reciclando conexiones después de 7500 usos
+  maxUses: parseInt(process.env.DB_MAX_USES || '7500', 10)
 };
 
 const pool = new Pool(config);
