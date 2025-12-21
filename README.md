@@ -1,5 +1,7 @@
 # Disc Radio 🎵
 
+[![Code Quality & Security](https://github.com/idiegocs/radiocalico/actions/workflows/typescript-check.yml/badge.svg)](https://github.com/idiegocs/radiocalico/actions/workflows/typescript-check.yml)
+
 Aplicación web de radio con reproductor de audio, visualizador en tiempo real y gestión de canciones.
 
 ## Características
@@ -438,6 +440,43 @@ docker-compose ps
 | play_count | INTEGER | Contador de reproducciones |
 | created_at | TIMESTAMP | Fecha de creación |
 | updated_at | TIMESTAMP | Fecha de actualización |
+
+## Seguridad
+
+Este proyecto implementa escaneo de seguridad integral:
+
+### 🛡️ Herramientas de Seguridad
+
+- **SAST (Análisis Estático)**: Semgrep para detectar vulnerabilidades en el código
+- **Escaneo de Dependencias**: npm audit + GitHub Dependabot
+- **Escaneo de Contenedores**: Trivy para vulnerabilidades en imágenes Docker
+- **Actualizaciones Automáticas**: PRs semanales de seguridad vía Dependabot
+
+### 📊 Estado de Seguridad
+
+- ✅ **0 vulnerabilidades** en dependencias (577 paquetes auditados)
+- ✅ **Escaneo automático** en cada push y pull request
+- ✅ **Consultas parametrizadas** SQL para prevenir inyecciones
+- ✅ **TypeScript estricto** para seguridad de tipos
+
+### 🔍 Ver Reportes de Seguridad
+
+**GitHub Security Tab**:
+- Ve a [Security](https://github.com/idiegocs/radiocalico/security) → Code scanning
+- Revisa hallazgos de Semgrep y Trivy con niveles de severidad
+
+**Ejecutar Escaneos Localmente**:
+```bash
+npm run security:all          # Ejecutar todos los escaneos
+npm run security:audit        # Escanear dependencias
+npm run security:lint         # Escanear código con ESLint
+```
+
+### 📋 Política de Seguridad
+
+Para reportar vulnerabilidades de seguridad, consulta [SECURITY.md](SECURITY.md).
+
+**IMPORTANTE**: Nunca reportes vulnerabilidades de seguridad a través de issues públicos.
 
 ## Contribuir
 

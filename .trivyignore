@@ -1,0 +1,12 @@
+# Trivy Ignore File
+# Ignore specific CVEs that are false positives or accepted risks
+# Format: CVE-YYYY-NNNNN
+
+# Example: Ignore CVEs in dev dependencies (if needed)
+# CVE-2024-12345
+
+# Example: Ignore CVEs with no fix available (document reason)
+# CVE-2023-99999  # No fix available, mitigated by network isolation
+
+# Example: Ignore low severity CVEs in base image
+# CVE-2023-11111  # Alpine base image CVE, low severity, no exploit known

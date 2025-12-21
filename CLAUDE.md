@@ -47,6 +47,80 @@ npm start                     # Start production server (requires build first)
 - Server: db (when using Docker) or localhost
 - Database credentials are in environment files (`.env.development`, `.env.production`)
 
+## Security Scanning
+
+### Automated Security Scans
+
+The project runs automated security scans on every push and pull request:
+
+**SAST (Static Application Security Testing)**:
+- **Semgrep**: Detects security vulnerabilities in TypeScript/JavaScript code
+  - OWASP Top 10 coverage
+  - 2000+ security rules for Node.js/Express
+  - Custom rules for project-specific patterns
+- **ESLint Security Plugin**: Catches common security anti-patterns
+
+**Dependency Scanning**:
+- **npm audit**: Scans for known vulnerabilities in dependencies
+- **Dependabot**: Automated weekly checks and PR creation for security updates
+- **Trivy**: Scans Docker images for OS-level vulnerabilities
+
+**GitHub Actions Workflow**: `.github/workflows/typescript-check.yml`
+- Security scans run in parallel with quality checks
+- Results uploaded to GitHub Security tab (SARIF format)
+- Reports available as workflow artifacts
+- Report-only mode (no build failures)
+
+### Running Security Scans Locally
+
+```bash
+# Run all security checks
+npm run security:all
+
+# Individual scans
+npm run security:audit          # Check for vulnerable dependencies
+npm run security:lint           # Run ESLint security rules
+
+# Fix security issues
+npm run security:audit:fix      # Auto-fix vulnerable dependencies
+npm run lint:fix                # Auto-fix ESLint issues
+```
+
+### Viewing Security Reports
+
+**GitHub Security Tab**:
+1. Go to repository → Security → Code scanning
+2. View Semgrep and Trivy findings with severity levels
+3. Filter by severity: Critical, High, Medium, Low
+
+**Workflow Artifacts**:
+1. Go to Actions → Select workflow run
+2. Download `npm-audit-report` artifact
+3. Review JSON report for detailed vulnerability info
+
+**Dependabot Alerts**:
+1. Go to repository → Security → Dependabot alerts
+2. View dependency vulnerabilities with fix recommendations
+3. Review and merge automated PRs (created weekly on Mondays)
+
+### Security Best Practices
+
+- **Dependencies**: Keep dependencies up-to-date (check Dependabot PRs weekly)
+- **Secrets**: Never commit API keys, passwords, or tokens (use environment variables)
+- **SQL Queries**: Always use parameterized queries (e.g., `pool.query('SELECT * FROM table WHERE id = $1', [id])`)
+- **Input Validation**: Validate and sanitize all user inputs
+- **Error Messages**: Use generic error messages in production (don't expose stack traces or database details)
+- **Docker Images**: Use official images and update base images regularly
+- **Environment Variables**: Use `.env` files (never commit `.env` to git)
+
+### Security Scan Configuration
+
+**Custom Rules**: `.semgrep.yml` contains project-specific security patterns
+**Ignore CVEs**: `.trivyignore` for accepting known risks (document reasons)
+**npm Configuration**: `.npmrc` sets audit level to moderate
+
+For more information, see [SECURITY.md](SECURITY.md)
+
 ## Architecture
 
 ### Application Structure

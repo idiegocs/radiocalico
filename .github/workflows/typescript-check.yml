@@ -1,4 +1,4 @@
-name: Code Quality & Tests
+name: Code Quality & Security
 
 on:
   push:
@@ -39,3 +39,97 @@ jobs:
           exit 1
         fi
         echo "Build successful!"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    # SAST with Semgrep
+    - name: Run Semgrep SAST
+      uses: semgrep/semgrep-action@v1
+      continue-on-error: true
+      with:
+        config: >-
+          p/security-audit
+          p/nodejs
+          p/typescript
+          p/express
+          p/owasp-top-ten
+        generateSarif: "1"
+
+    - name: Upload Semgrep SARIF results
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: semgrep.sarif
+        category: semgrep
+
+    # ESLint Security Plugin
+    - name: Run ESLint Security Scan
+      continue-on-error: true
+      run: npm run lint:security
+
+    # Dependency Scanning with npm audit
+    - name: Run npm audit
+      continue-on-error: true
+      run: |
+        npm audit --json > npm-audit-report.json || true
+        npm audit --audit-level=moderate || true
+
+    - name: Upload npm audit report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-audit-report
+        path: npm-audit-report.json
+        retention-days: 30
+
+    # Docker Image Scanning
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      continue-on-error: true
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload Trivy SARIF results
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: trivy-results.sarif
+        category: trivy
+
+    # Generate Security Summary
+    - name: Create security scan summary
+      if: always()
+      run: |
+        echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Semgrep SAST" >> $GITHUB_STEP_SUMMARY
+        echo "Check the Security tab for detailed findings" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### npm audit" >> $GITHUB_STEP_SUMMARY
+        npm audit --audit-level=info || true >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Reports" >> $GITHUB_STEP_SUMMARY
+        echo "- Semgrep: See Security > Code Scanning" >> $GITHUB_STEP_SUMMARY
+        echo "- npm audit: Download artifact from Actions run" >> $GITHUB_STEP_SUMMARY

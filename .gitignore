@@ -59,3 +59,9 @@ public/audio/*.ogg
 *.temp
 .cache/
 nul
+
+# Security scan reports
+npm-audit-report.json
+semgrep-report.json
+trivy-results.sarif
+semgrep.sarif

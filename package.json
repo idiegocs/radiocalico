@@ -21,7 +21,12 @@
     "docker:down:dev": "docker-compose -p radiocalico_dev -f docker/docker-compose.yml down",
     "docker:down:prod": "docker-compose -p radiocalico_prod -f docker/docker-compose.yml down",
     "docker:logs": "docker-compose logs -f app",
-    "docker:logs:db": "docker-compose logs -f db"
+    "docker:logs:db": "docker-compose logs -f db",
+    "security:audit": "npm audit --audit-level=moderate",
+    "security:audit:fix": "npm audit fix",
+    "security:lint": "eslint -c config/eslint.config.js . --ext .ts",
+    "security:all": "npm run security:audit && npm run security:lint",
+    "lint:security": "eslint -c config/eslint.config.js . --ext .ts --no-eslintrc"
   },
   "keywords": [],
   "author": "",
@@ -42,6 +47,7 @@
     "@typescript-eslint/eslint-plugin": "^8.48.1",
     "@typescript-eslint/parser": "^8.48.1",
     "eslint": "^9.39.1",
+    "eslint-plugin-security": "^3.0.1",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "supertest": "^7.1.4",
