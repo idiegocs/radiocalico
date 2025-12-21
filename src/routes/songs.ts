@@ -1,22 +1,23 @@
 import * as express from 'express';
 import { Router } from 'express';
 import * as songsController from '../controllers/songsController';
+import { validateSongExists } from '../middleware/validateResource';
 
 const router: Router = express.Router();
 
 // Obtener todas las canciones
 router.get('/', songsController.getAllSongs);
 
-// Obtener una canción por ID
-router.get('/:id', songsController.getSongById);
+// Obtener una canción por ID (con validación de existencia)
+router.get('/:id', validateSongExists, songsController.getSongById);
 
-// Votar por una canción
-router.post('/:id/vote', songsController.voteSong);
+// Votar por una canción (con validación de existencia)
+router.post('/:id/vote', validateSongExists, songsController.voteSong);
 
-// Registrar reproducción
-router.post('/:id/play', songsController.registerPlay);
+// Registrar reproducción (con validación de existencia)
+router.post('/:id/play', validateSongExists, songsController.registerPlay);
 
-// Obtener carátula de álbum
-router.get('/:id/cover', songsController.getCover);
+// Obtener carátula de álbum (con validación de existencia)
+router.get('/:id/cover', validateSongExists, songsController.getCover);
 
 export default router;

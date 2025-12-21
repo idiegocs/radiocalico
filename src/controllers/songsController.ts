@@ -51,6 +51,7 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
 
 /**
  * Obtener una canción por ID
+ * Nota: La validación de existencia se realiza en el middleware validateSongExists
  */
 export const getSongById = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -59,15 +60,6 @@ export const getSongById = async (req: Request, res: Response): Promise<void> =>
       'SELECT * FROM songs WHERE id = $1',
       [id]
     );
-
-    if (result.rows.length === 0) {
-      const notFoundResponse: APIResponse = {
-        success: false,
-        message: 'Canción no encontrada'
-      };
-      res.status(404).json(notFoundResponse);
-      return;
-    }
 
     const response: APIResponse<Song> = {
       success: true,
@@ -91,25 +83,11 @@ export const getSongById = async (req: Request, res: Response): Promise<void> =>
 
 /**
  * Votar por una canción
+ * Nota: La validación de existencia se realiza en el middleware validateSongExists
  */
 export const voteSong = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-
-    // Verificar que la canción existe
-    const checkResult: QueryResult<{ id: number }> = await pool.query(
-      'SELECT id FROM songs WHERE id = $1',
-      [id]
-    );
-
-    if (checkResult.rows.length === 0) {
-      const notFoundResponse: APIResponse = {
-        success: false,
-        message: 'Canción no encontrada'
-      };
-      res.status(404).json(notFoundResponse);
-      return;
-    }
 
     // Incrementar el contador de votos
     const result: QueryResult<Song> = await pool.query(
@@ -140,25 +118,11 @@ export const voteSong = async (req: Request, res: Response): Promise<void> => {
 
 /**
  * Incrementar contador de reproducciones
+ * Nota: La validación de existencia se realiza en el middleware validateSongExists
  */
 export const registerPlay = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-
-    // Verificar que la canción existe
-    const checkResult: QueryResult<{ id: number }> = await pool.query(
-      'SELECT id FROM songs WHERE id = $1',
-      [id]
-    );
-
-    if (checkResult.rows.length === 0) {
-      const notFoundResponse: APIResponse = {
-        success: false,
-        message: 'Canción no encontrada'
-      };
-      res.status(404).json(notFoundResponse);
-      return;
-    }
 
     // Incrementar el contador de reproducciones
     const result: QueryResult<Song> = await pool.query(
@@ -189,6 +153,7 @@ export const registerPlay = async (req: Request, res: Response): Promise<void> =
 
 /**
  * Buscar carátula de álbum
+ * Nota: La validación de existencia se realiza en el middleware validateSongExists
  */
 export const getCover = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -199,15 +164,6 @@ export const getCover = async (req: Request, res: Response): Promise<void> => {
       'SELECT title, artist FROM songs WHERE id = $1',
       [id]
     );
-
-    if (songResult.rows.length === 0) {
-      const notFoundResponse: APIResponse = {
-        success: false,
-        message: 'Canción no encontrada'
-      };
-      res.status(404).json(notFoundResponse);
-      return;
-    }
 
     const { title, artist } = songResult.rows[0];
 
