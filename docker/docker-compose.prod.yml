@@ -35,4 +35,17 @@ services:
           cpus: '0.5'
           memory: 512M
 
+  datadog-agent:
+    container_name: radiocalico_datadog_prod
+    restart: always
+    # Limit Datadog agent resources in production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
 # Note: adminer service is not included in production

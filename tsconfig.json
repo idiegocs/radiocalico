@@ -1,0 +1,12 @@
+{
+  "extends": "./config/tsconfig.json",
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true
+  },
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2020",
+    "esModuleInterop": true
+  }
+}

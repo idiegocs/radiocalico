@@ -8,7 +8,7 @@ services:
     container_name: radiocalico_app_dev
     # Development: mount source code for hot reload
     volumes:
-      - .:/usr/src/app
+      - ..:/usr/src/app
       - /usr/src/app/node_modules
     # Development command with nodemon
     command: npm run dev
@@ -29,3 +29,8 @@ services:
       - db
     networks:
       - radiocalico_network
+    labels:
+      com.datadoghq.ad.logs: '[{"source": "adminer", "service": "radiocalico-adminer"}]'
+
+  datadog-agent:
+    container_name: radiocalico_datadog_dev

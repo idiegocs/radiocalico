@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { QueryResult } from 'pg';
 import pool from '../config/database';
 import { APIResponse } from '../types';
+import { log } from '../config/logger';
 
 /**
  * Middleware para validar que una canción existe
@@ -53,7 +54,7 @@ export async function validateSongExists(
   } catch (error) {
     // Error de base de datos u otro error inesperado
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al validar canción:', errorMessage);
+    log.error('Error al validar canción', error, { songId: id });
 
     const errorResponse: APIResponse = {
       success: false,

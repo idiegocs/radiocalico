@@ -47,6 +47,112 @@ npm start                     # Start production server (requires build first)
 - Server: db (when using Docker) or localhost
 - Database credentials are in environment files (`.env.development`, `.env.production`)
 
+## Monitoring with Datadog
+
+The application includes integrated Datadog monitoring for logs, metrics, and APM tracing across all environments.
+
+### Setup Instructions
+
+1. **Get your Datadog API Key**:
+   - Log in to [Datadog](https://app.datadoghq.com)
+   - Go to Organization Settings → API Keys
+   - Copy your API key
+
+2. **Configure Environment Variables**:
+   - Update `DD_API_KEY` in `env/.env.development` or `env/.env.production`
+   - Set `DD_SITE` to your Datadog site (default: `datadoghq.com`)
+     - US1: `datadoghq.com`
+     - US3: `us3.datadoghq.com`
+     - US5: `us5.datadoghq.com`
+     - EU: `datadoghq.eu`
+     - AP1: `ap1.datadoghq.com`
+
+3. **Start the Application**:
+   ```bash
+   # Development
+   npm run docker:dev
+
+   # Production
+   npm run docker:prod
+   ```
+
+### Datadog Configuration
+
+**Environment Variables** (in `env/.env.development` and `env/.env.production`):
+- `DD_API_KEY`: Your Datadog API key (required)
+- `DD_SITE`: Datadog site URL (default: datadoghq.com)
+- `DD_ENV`: Environment tag (development/production)
+- `DD_SERVICE`: Service name (default: radiocalico)
+- `DD_VERSION`: Application version (default: 1.0.0)
+- `DD_LOGS_ENABLED`: Enable log collection (default: true)
+- `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL`: Collect all container logs (default: true)
+
+**Container Architecture**:
+The Datadog agent runs as a separate container (`datadog-agent`) that:
+- Collects logs from all application containers
+- Monitors container metrics (CPU, memory, network)
+- Forwards data to Datadog cloud platform
+- Automatically discovers and tags containers
+
+**Container Names**:
+- Development: `radiocalico_datadog_dev`
+- Production: `radiocalico_datadog_prod`
+
+**Log Sources**:
+- `radiocalico-app`: Node.js application logs (source: nodejs)
+- `radiocalico-db`: PostgreSQL database logs (source: postgresql)
+- `radiocalico-adminer`: Adminer UI logs (development only, source: adminer)
+
+### Viewing Logs in Datadog
+
+1. Go to [Datadog Logs](https://app.datadoghq.com/logs)
+2. Filter by service:
+   - `service:radiocalico-app` - Application logs
+   - `service:radiocalico-db` - Database logs
+   - `service:radiocalico-adminer` - Adminer logs (dev only)
+3. Filter by environment:
+   - `env:development` - Development logs
+   - `env:production` - Production logs
+
+### Troubleshooting
+
+**Logs not appearing in Datadog**:
+1. Check that `DD_API_KEY` is set correctly in your environment file
+2. Verify the Datadog agent container is running:
+   ```bash
+   docker ps | grep datadog
+   ```
+3. Check Datadog agent logs:
+   ```bash
+   # Development
+   docker logs radiocalico_datadog_dev
+
+   # Production
+   docker logs radiocalico_datadog_prod
+   ```
+4. Ensure your firewall allows outbound connections to Datadog
+
+**Agent container keeps restarting**:
+- Verify your API key is valid
+- Check that DD_SITE matches your Datadog region
+- Review agent logs for specific error messages
+
+**Windows-specific notes**:
+- Docker Desktop must have access to `/var/run/docker.sock`
+- Ensure "Expose daemon on tcp://localhost:2375 without TLS" is NOT enabled (security risk)
+- The agent uses Docker socket mounting which requires Docker Desktop configuration
+
+### Resource Usage
+
+**Development**:
+- No resource limits applied for easier debugging
+
+**Production**:
+- CPU Limit: 0.5 cores
+- Memory Limit: 512MB
+- CPU Reservation: 0.25 cores
+- Memory Reservation: 256MB
+
 ## Security Scanning
 
 ### Automated Security Scans
@@ -136,22 +242,32 @@ For more information, see [SECURITY.md](SECURITY.md)
   - MusicBrainz types: External API response types
 
 ### Docker Setup
-The application uses a 3-container architecture:
+The application uses a multi-container architecture:
+
 1. **app**: Node.js application container
    - Uses Node 20 Alpine image
-   - Mounts source code as volume for hot reload
+   - Mounts source code as volume for hot reload (development)
    - Depends on database health check before starting
    - Runs on port 3000 (configurable via APP_PORT)
+   - Sends logs to Datadog agent
 
 2. **db**: PostgreSQL 16 database container
    - Uses Alpine variant for smaller image size
    - Persistent storage via Docker volume (postgres_data)
    - Health check ensures database is ready before app starts
    - Exposed on port 5432
+   - Sends logs to Datadog agent
 
-3. **adminer**: Database management UI
+3. **datadog-agent**: Datadog monitoring agent
+   - Collects logs and metrics from all containers
+   - Runs as `radiocalico_datadog_dev` (development) or `radiocalico_datadog_prod` (production)
+   - Requires DD_API_KEY environment variable
+   - Forwards data to Datadog cloud platform
+
+4. **adminer**: Database management UI (development only)
    - Lightweight web interface for PostgreSQL
    - Accessible on port 8080 (configurable via ADMINER_PORT)
+   - Only included in development environment
 
 ### Database Connection
 - Connection string format: `postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}`
@@ -172,13 +288,33 @@ The project uses environment-specific configuration files:
 ```
 
 #### Environment Variables
+
+**Application:**
 - **NODE_ENV**: Application environment (development/production)
 - **APP_PORT**: Application server port (default: 3000)
+
+**Database:**
 - **POSTGRES_USER**: Database username
 - **POSTGRES_PASSWORD**: Database password (CHANGE IN PRODUCTION!)
 - **POSTGRES_DB**: Database name
 - **POSTGRES_PORT**: Database port (default: 5432)
+- **DB_POOL_MAX**: Max connections in pool (default: 20)
+- **DB_POOL_MIN**: Min connections in pool (default: 2)
+- **DB_IDLE_TIMEOUT**: Idle timeout in milliseconds (default: 30000)
+- **DB_CONNECTION_TIMEOUT**: Connection timeout in milliseconds (default: 2000)
+- **DB_MAX_USES**: Max uses before recycling connection (default: 7500)
+
+**Development Tools:**
 - **ADMINER_PORT**: Adminer web interface port (development only, default: 8080)
+
+**Datadog Monitoring:**
+- **DD_API_KEY**: Your Datadog API key (required for monitoring)
+- **DD_SITE**: Datadog site URL (default: datadoghq.com)
+- **DD_ENV**: Environment tag (development/production)
+- **DD_SERVICE**: Service name (default: radiocalico)
+- **DD_VERSION**: Application version (default: 1.0.0)
+- **DD_LOGS_ENABLED**: Enable log collection (default: true)
+- **DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL**: Collect all container logs (default: true)
 
 #### Docker Compose Files
 ```
@@ -194,22 +330,24 @@ docker-compose.prod.yml     # Production overrides (optimized, no dev tools)
 - Database Port: **5432**
 - Adminer Port: **8080**
 - Database Name: `radiocalico_db_dev`
-- Container Names: `radiocalico_app_dev`, `radiocalico_db_dev`, `radiocalico_adminer_dev`
+- Container Names: `radiocalico_app_dev`, `radiocalico_db_dev`, `radiocalico_adminer_dev`, `radiocalico_datadog_dev`
 - Hot reload enabled (source code mounted as volume)
 - Adminer database UI included
 - Development dependencies available
 - Verbose logging
+- Datadog monitoring enabled
 - Command: `npm run dev` (nodemon with ts-node)
 
 **Production:**
 - Application Port: **3001**
 - Database Port: **5433**
 - Database Name: `radiocalico_db_prod`
-- Container Names: `radiocalico_app_prod`, `radiocalico_db_prod`
+- Container Names: `radiocalico_app_prod`, `radiocalico_db_prod`, `radiocalico_datadog_prod`
 - No volume mounts (uses built image)
 - No Adminer (security)
 - Optimized build
-- Resource limits applied
+- Resource limits applied (including Datadog agent)
+- Datadog monitoring enabled
 - Command: `npm start` (compiled JavaScript)
 - Always restart policy
 

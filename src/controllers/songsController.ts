@@ -3,6 +3,7 @@ import { QueryResult } from 'pg';
 import pool from '../config/database';
 import coverArtService from '../services/coverArtService';
 import { Song, APIResponse } from '../types';
+import { log } from '../config/logger';
 
 /**
  * Obtener todas las canciones
@@ -37,7 +38,7 @@ export const getAllSongs = async (req: Request, res: Response): Promise<void> =>
     res.json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al obtener canciones:', errorMessage);
+    log.error('Error al obtener canciones', error);
 
     const errorResponse: APIResponse = {
       success: false,
@@ -69,7 +70,7 @@ export const getSongById = async (req: Request, res: Response): Promise<void> =>
     res.json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al obtener canción:', errorMessage);
+    log.error('Error al obtener canción', error, { songId: id });
 
     const errorResponse: APIResponse = {
       success: false,
@@ -104,7 +105,7 @@ export const voteSong = async (req: Request, res: Response): Promise<void> => {
     res.json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al votar por canción:', errorMessage);
+    log.error('Error al votar por canción', error, { songId: id });
 
     const errorResponse: APIResponse = {
       success: false,
@@ -139,7 +140,7 @@ export const registerPlay = async (req: Request, res: Response): Promise<void> =
     res.json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al registrar reproducción:', errorMessage);
+    log.error('Error al registrar reproducción', error, { songId: id });
 
     const errorResponse: APIResponse = {
       success: false,
@@ -179,7 +180,7 @@ export const getCover = async (req: Request, res: Response): Promise<void> => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al buscar carátula:', errorMessage);
+    log.error('Error al buscar carátula', error, { artist, title });
 
     const errorResponse: APIResponse = {
       success: false,

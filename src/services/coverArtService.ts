@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { CoverSearchResult, MusicBrainzSearchResponse } from '../types';
+import { log } from '../config/logger';
 
 /**
  * Servicio para búsqueda de carátulas de álbumes
@@ -51,7 +52,7 @@ class CoverArtService {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error en búsqueda de carátula:', errorMessage);
+      log.error('Error en búsqueda de carátula', error, { artist, title });
       throw error;
     }
   }
@@ -88,7 +89,7 @@ class CoverArtService {
           const coverUrl = await this.getCoverArtArchiveUrl(release.id);
 
           if (coverUrl) {
-            console.log(`✨ Carátula encontrada para "${artist} - ${title}"`);
+            log.info('Carátula encontrada', { artist, title, source: 'Cover Art Archive' });
             return {
               coverUrl: coverUrl,
               source: 'coverartarchive',
@@ -106,7 +107,7 @@ class CoverArtService {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Error en búsqueda de MusicBrainz:', errorMessage);
+      log.error('Error en búsqueda de MusicBrainz', error, { artist, title });
       throw error;
     }
   }

@@ -4,6 +4,7 @@ import path from 'path';
 import pool from './src/config/database';
 import songsRoutes from './src/routes/songs';
 import { APIResponse } from './src/types';
+import { log } from './src/config/logger';
 
 const app: Application = express();
 // Puerto interno en el que escucha el servidor (siempre 3000 en Docker)
@@ -61,7 +62,7 @@ app.get('/db-test', async (req: Request, res: Response) => {
     res.json(response);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error al conectar con la base de datos:', errorMessage);
+    log.error('Error al conectar con la base de datos', error);
 
     const errorResponse: APIResponse = {
       success: false,
@@ -77,15 +78,20 @@ app.use('/api/songs', songsRoutes);
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor escuchando en el puerto ${PORT}`);
-  console.log(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+  log.info(`Servidor escuchando en el puerto ${PORT}`, {
+    port: PORT,
+    displayPort: DISPLAY_PORT,
+    environment: process.env.NODE_ENV || 'development'
+  });
 });
 
 // Manejo de errores globales
 process.on('uncaughtException', (error: Error) => {
-  console.error('❌ Error no capturado:', error);
+  log.error('Error no capturado', error);
+  process.exit(1);
 });
 
 process.on('unhandledRejection', (error: Error) => {
-  console.error('❌ Promesa rechazada no manejada:', error);
+  log.error('Promesa rechazada no manejada', error);
+  process.exit(1);
 });
