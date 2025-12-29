@@ -157,6 +157,9 @@ export const registerPlay = async (req: Request, res: Response): Promise<void> =
  * Nota: La validación de existencia se realiza en el middleware validateSongExists
  */
 export const getCover = async (req: Request, res: Response): Promise<void> => {
+  let title: string | undefined;
+  let artist: string | undefined;
+
   try {
     const { id } = req.params;
 
@@ -166,10 +169,11 @@ export const getCover = async (req: Request, res: Response): Promise<void> => {
       [id]
     );
 
-    const { title, artist } = songResult.rows[0];
+    title = songResult.rows[0]?.title;
+    artist = songResult.rows[0]?.artist;
 
     // Usar el servicio de búsqueda de carátulas
-    const result = await coverArtService.searchCover(artist, title);
+    const result = await coverArtService.searchCover(artist!, title!);
 
     const response: APIResponse = {
       success: true,
